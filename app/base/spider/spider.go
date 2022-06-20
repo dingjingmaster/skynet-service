@@ -3,7 +3,6 @@ package spider
 import (
 	"github.com/gocolly/colly"
 	"skynet-service/app/common/status"
-	"skynet-service/app/spiders"
 	"sync"
 )
 
@@ -43,7 +42,7 @@ type (
 func (self Spider) Register() *Spider {
 	self.status = status.SPIDER_STOPPED
 
-	return spiders.Species.Add(&self)
+	return Species.Add(&self)
 }
 
 // 指定规则的获取结果的字段名列表
