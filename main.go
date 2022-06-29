@@ -1,10 +1,10 @@
-package skynet_service
+package main
 
 import (
 	"fmt"
 	"os"
-	"spider/config"
-	"spider/exec"
+	"skynet-service/app/config"
+	"skynet-service/app/exec"
 	"strconv"
 	"syscall"
 

@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"spider/logs"
+	"skynet-service/app/logs"
 	"syscall"
 	"time"
 )

@@ -3,12 +3,12 @@ package gold_price
 import (
 	"encoding/json"
 	"fmt"
-	"skynet-service/app/base/spider"
-	"spider/common/timeUtils"
-	"spider/logs"
+	"skynet-service/app/common/timeUtils"
+	"skynet-service/app/logs"
+	"skynet-service/app/spider"
 
 	//"skynet-service/app/common/request"
-	"spider/app/downloader/request"
+	"skynet-service/app/downloader/request"
 )
 
 func init() {
