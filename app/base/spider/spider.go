@@ -1,8 +1,9 @@
 package spider
 
 import (
-	"github.com/gocolly/colly"
 	"skynet-service/app/common/status"
+	"spider/app/downloader/request"
+	"spider/app/scheduler"
 	"sync"
 )
 
@@ -12,29 +13,25 @@ type (
 		Description 		string
 		RuleTree			*RuleTree
 
-		RequestType 		int							// 请求类型: POST/GET
+		RequestType 		int												// 请求类型: POST/GET
 
 		//
-		status				int							// 运行状态
+		status				int												// 运行状态
+		reqMatrix 			*scheduler.Matrix 								// 请求矩阵
 		lock 				sync.RWMutex
 		once 				sync.Once
 	}
 
 	// 采集规则树
 	RuleTree struct {
-		RootURI			string
-		Trunk 			map[string]*Rule				// 节点散列表(采集过程)
+		Root			func(c *Context)									// 根节点入口
+		Trunk 			map[string]*Rule									// 节点散列表(采集过程)
 	}
 
 	Rule struct {
 		ItemFields 		[]string
-		RequestFunc 	func(r *colly.Request)
-		ResponseFunc 	func(r *colly.Response)
-
-		HTMLParser 		map[string]*colly.HTMLElement
-		XMLParser 		map[string]*colly.XMLElement
-
-		AidFunc			func(interface{}) interface{}	// 辅助函数
+		ParseFunc  		func(*Context)                  					// 内容解析函数
+		AidFunc			func(*Context, map[string]interface{}) interface{}	// 辅助函数
 	}
 )
 
@@ -119,10 +116,7 @@ func (self *Spider) Copy() *Spider {
 		ghost.RuleTree.Trunk[k].ItemFields = make([]string, len(v.ItemFields))
 		copy(ghost.RuleTree.Trunk[k].ItemFields, v.ItemFields)
 
-		ghost.RuleTree.Trunk[k].RequestFunc = v.RequestFunc
-		ghost.RuleTree.Trunk[k].ResponseFunc = v.ResponseFunc
-		ghost.RuleTree.Trunk[k].HTMLParser = v.HTMLParser
-		ghost.RuleTree.Trunk[k].XMLParser = v.XMLParser
+		ghost.RuleTree.Trunk[k].ParseFunc = v.ParseFunc
 		ghost.RuleTree.Trunk[k].AidFunc = v.AidFunc
 	}
 
@@ -135,8 +129,8 @@ func (self *Spider) Copy() *Spider {
 func (self *Spider) defaultRootRequest (r map[string]string) {
 }
 
-func New () {
-
+func (self *Spider) RequestPush(req *request.Request) {
+	self.reqMatrix.Push(req)
 }
 
 // 开始执行
@@ -147,7 +141,19 @@ func (self *Spider) Start () {
 		self.lock.Unlock()
 	}()
 
-	//ctx = colly.NewCollector()
+	self.RuleTree.Root(GetContext(self, nil))
+}
+
+// 主动崩溃爬虫运行协程
+func (self *Spider) Stop () {
+	self.lock.Lock()
+
+	defer self.lock.Unlock()
+
+	if self.status == status.SPIDER_STOPPED {
+		return
+	}
+	self.status = status.SPIDER_STOPPED
 }
 
 // 退出任务前收尾工作
